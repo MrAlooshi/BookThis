@@ -42,4 +42,10 @@ public class BookingRepository extends BaseRepository<Booking> {
                 && b.getDate().toLocalDate().equals(date))
             .collect(Collectors.toList());
     }
+
+    public List<Booking> findByUserEmail(String email) {
+        return items.values().stream()
+            .filter(b -> b.getUser().getEmail().equals(email))
+            .collect(Collectors.toList());
+    }
 } 

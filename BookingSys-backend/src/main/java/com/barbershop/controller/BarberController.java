@@ -49,7 +49,6 @@ public class BarberController {
     public ResponseEntity<List<TimeSlotDTO>> getAvailability(
             @PathVariable Long id,
             @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate date) {
-        
         List<TimeSlotDTO> availableSlots = barberService.getAvailableTimeSlots(id, date);
         return ResponseEntity.ok(availableSlots);
     }

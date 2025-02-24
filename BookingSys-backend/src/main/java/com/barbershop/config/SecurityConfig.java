@@ -34,7 +34,10 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())  // Disable CSRF for API endpoints
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/auth/**", "/api/users/register").permitAll()
+                .requestMatchers("/api/auth/**").permitAll()
+                .requestMatchers("/api/test/public").permitAll()
+                .requestMatchers("/api/barbers/**").permitAll()  // Allow public access to barber endpoints
+                .requestMatchers("/api/services").permitAll()    // Allow public access to services
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
                 .requestMatchers("/api/bookings/**").hasAnyRole("USER", "ADMIN")
                 .anyRequest().authenticated()

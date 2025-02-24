@@ -1,0 +1,18 @@
+# Set environment variables for email service
+export MAIL_USERNAME=your-gmail@gmail.com
+export MAIL_PASSWORD=your-app-specific-password 
+
+# Navigate to backend directory
+cd BookingSys-backend
+
+# Build and run the application
+chmod +x mvnw
+mvnw.cmd spring-boot:run 
+
+# Check Java version
+java -version
+
+# Set JAVA_HOME if needed
+export JAVA_HOME=/path/to/java21 
+
+curl http://localhost:8080/api/test/public 

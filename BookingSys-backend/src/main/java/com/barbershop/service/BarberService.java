@@ -11,9 +11,12 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import com.barbershop.dto.TimeSlotDTO;
+import com.barbershop.model.Barber;
 import com.barbershop.model.Booking;
+import com.barbershop.repository.BarberRepository;
 import com.barbershop.repository.BookingRepository;
 
+import jakarta.annotation.PostConstruct;
 import jakarta.mail.MessagingException;
 import lombok.RequiredArgsConstructor;
 
@@ -22,41 +25,50 @@ import lombok.RequiredArgsConstructor;
 public class BarberService {
     private final BookingRepository bookingRepository;
     private final EmailService emailService;
+    private final BarberRepository barberRepository;
     private static final Logger log = LoggerFactory.getLogger(BarberService.class);
 
-    public List<TimeSlotDTO> getAvailableTimeSlots(Long barberId, LocalDate date) {
-        // Get barber's working hours for the given day
-        List<TimeSlotDTO> slots = generateTimeSlots();
-        
-        // Get existing bookings
-        List<Booking> existingBookings = bookingRepository
-            .findByBarberIdAndDate(barberId, date);
-        
-        // Mark slots as unavailable if booked
-        for (Booking booking : existingBookings) {
-            slots.stream()
-                .filter(slot -> slot.getTime().equals(
-                    booking.getDate().toLocalTime().format(DateTimeFormatter.ofPattern("HH:mm"))))
-                .forEach(slot -> slot.setAvailable(false));
+    private static final LocalTime START_TIME = LocalTime.of(9, 0); // 9:00 AM
+    private static final LocalTime END_TIME = LocalTime.of(17, 0);  // 5:00 PM
+    private static final int SLOT_DURATION = 30; // 30 minutes per slot
+
+    @PostConstruct
+    public void init() {
+        // Add some test barbers if repository is empty
+        if (barberRepository.findAll().isEmpty()) {
+            Barber barber1 = new Barber();
+            barber1.setName("John Smith");
+            barber1.setSpecialty("Classic Cuts");
+            barberRepository.save(barber1);
+
+            Barber barber2 = new Barber();
+            barber2.setName("Mike Johnson");
+            barber2.setSpecialty("Modern Styles");
+            barberRepository.save(barber2);
         }
-        
-        return slots;
     }
 
-    private List<TimeSlotDTO> generateTimeSlots() {
-        List<TimeSlotDTO> slots = new ArrayList<>();
-        LocalTime start = LocalTime.of(9, 0); // 9 AM
-        LocalTime end = LocalTime.of(17, 0);  // 5 PM
-        
-        while (start.isBefore(end)) {
-            slots.add(new TimeSlotDTO(
-                start.format(DateTimeFormatter.ofPattern("HH:mm")),
-                true
+    public List<TimeSlotDTO> getAvailableTimeSlots(Long barberId, LocalDate date) {
+        List<TimeSlotDTO> availableSlots = new ArrayList<>();
+        List<Booking> existingBookings = bookingRepository.findByBarberIdAndDate(barberId, date);
+
+        LocalTime currentTime = START_TIME;
+        while (currentTime.plusMinutes(SLOT_DURATION).isBefore(END_TIME) || 
+               currentTime.plusMinutes(SLOT_DURATION).equals(END_TIME)) {
+            
+            final LocalTime slotTime = currentTime;
+            boolean isAvailable = existingBookings.stream()
+                .noneMatch(booking -> booking.getDate().toLocalTime().equals(slotTime));
+
+            availableSlots.add(new TimeSlotDTO(
+                currentTime.format(DateTimeFormatter.ofPattern("HH:mm")),
+                isAvailable
             ));
-            start = start.plusMinutes(30); // 30-minute slots
+
+            currentTime = currentTime.plusMinutes(SLOT_DURATION);
         }
-        
-        return slots;
+
+        return availableSlots;
     }
 
     public void cancelBooking(Long bookingId) {
